@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../ui_components.h"
 #include "constants.h"
@@ -97,6 +98,37 @@ static void load_from_cache(component_background_t *c) {
  *
  * @param c Pointer to the background component structure.
  */
+/* n64ra themes: the theme's own background, until one is set */
+static void load_theme_default(component_background_t *c) {
+    if (c->image) {
+        return;
+    }
+    FILE *f = fopen(THEME_BACKGROUND_SPRITE, "rb");
+    if (!f) {
+        return;
+    }
+    fclose(f);
+    sprite_t *sprite = sprite_load(THEME_BACKGROUND_SPRITE);
+    if (!sprite) {
+        return;
+    }
+    surface_t src = sprite_get_pixels(sprite);
+    c->image = calloc(1, sizeof(surface_t));
+    if (c->image) {
+        *c->image = surface_alloc(FMT_RGBA16, src.width, src.height);
+        if (c->image->buffer) {
+            for (int y = 0; y < src.height; y++) {
+                memcpy((uint8_t *) (c->image->buffer) + y * c->image->stride,
+                       (uint8_t *) (src.buffer) + y * src.stride, src.width * 2);
+            }
+        } else {
+            free(c->image);
+            c->image = NULL;
+        }
+    }
+    sprite_free(sprite);
+}
+
 static void save_to_cache(component_background_t *c) {
     if (!c->cache_location || !c->image) {
         return;
@@ -210,6 +242,7 @@ void ui_components_background_init(char *cache_location) {
         background = calloc(1, sizeof(component_background_t));
         background->cache_location = strdup(cache_location);
         load_from_cache(background);
+        load_theme_default(background);
         prepare_background(background);
     }
 }
@@ -256,6 +289,8 @@ void ui_components_background_clear(void) {
         rspq_block_free(background->image_display_list);
         background->image_display_list = NULL;
     }
+    load_theme_default(background);
+    prepare_background(background);
 }
 
 /**
@@ -304,6 +339,7 @@ void ui_components_background_reload(void) {
     }
     if (!background->image) {
         load_from_cache(background);
+        load_theme_default(background);
         prepare_background(background);
     }
 }

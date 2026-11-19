@@ -20,6 +20,7 @@
  * @param cheat_list A pointer to an array of cheats to be installed.
  * @return true if the cheats were successfully installed, false otherwise.
  */
+bool cheats_patch_ipl3 (cic_type_t cic_type, io32_t *target);
 bool cheats_install(cic_type_t cic_type, uint32_t *cheat_list);
 
 #endif // CHEATS_H__

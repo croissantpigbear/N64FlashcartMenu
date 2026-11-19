@@ -3,6 +3,7 @@
 #include "boot_io.h"
 #include "boot.h"
 #include "cheats.h"
+#include "n64ra.h"
 #include "cic.h"
 #include "reboot.h"
 
@@ -148,7 +149,11 @@ void boot (boot_params_t *params) {
         cpu_io_write(&ipl3_dst[i], io_read((uint32_t) (&ipl3_src[i])));
     }
 
-    bool cheats_installed = cheats_install(cic_type, params->cheat_list);
+    // RetroAchievements and cheats both take over the exception vector; with
+    // achievements on, cheats stay off (RetroAchievements' hardcore rules agree)
+    bool n64ra_installed = params->retroachievements && n64ra_install(cic_type, params);
+    bool cheats_installed = !n64ra_installed && cheats_install(cic_type, params->cheat_list);
+    cheats_installed = cheats_installed || n64ra_installed;
 
     register uint32_t clear_rdram asm ("s1");
     register uint32_t skip_rdram_reset asm ("a0");

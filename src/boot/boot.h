@@ -38,6 +38,8 @@ typedef struct {
     bool detect_cic_seed; /**< Flag to detect CIC seed */
     uint32_t *cheat_list; /**< Pointer to the cheat list */
     bool clear_rdram; /**< Zero RDRAM before handing off to IPL3 */
+    bool retroachievements; /**< Install the n64ra agent (RetroAchievements over the SC64's USB) */
+    uint32_t rom_size; /**< ROM file size, for the n64ra bridge to hash the ROM */
 } boot_params_t;
 
 /**

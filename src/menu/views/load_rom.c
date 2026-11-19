@@ -393,6 +393,18 @@ static void set_patcher_option(menu_t *menu, void *arg) {
 }
 #endif
 
+static void set_achievements_option(menu_t *menu, void *arg) {
+    bool enabled = (bool)arg;
+    if (enabled && !is_memory_expanded()) {
+        // The n64ra agent lives in the top of the Expansion Pak
+        rom_config_setting_set_achievements(menu->load.rom_path, &menu->load.rom_info, false);
+        menu_show_error(menu, "RetroAchievements need an Expansion Pak");
+    } else {
+        rom_config_setting_set_achievements(menu->load.rom_path, &menu->load.rom_info, enabled);
+    }
+    menu->browser.reload = true;
+}
+
 static void set_clear_rdram_option(menu_t *menu, void *arg) {
     bool enabled = (bool)arg;
     rom_config_setting_set_clear_rdram(menu->load.rom_path, &menu->load.rom_info, enabled);
@@ -605,6 +617,16 @@ static component_context_menu_t set_clear_rdram_options_menu = {
     COMPONENT_CONTEXT_MENU_LIST_END,
 }};
 
+static int get_rom_achievements_current_selection (menu_t *menu);
+
+static component_context_menu_t set_achievements_options_menu = {
+    .get_default_selection = get_rom_achievements_current_selection,
+    .list = {
+    { .text = "Enabled", .action = set_achievements_option, .arg = (void *) (true)},
+    { .text = "Disabled", .action = set_achievements_option, .arg = (void *) (false)},
+    COMPONENT_CONTEXT_MENU_LIST_END,
+}};
+
 static component_context_menu_t options_context_menu = { .list = {
     { .text = "Set CIC Type", .submenu = &set_cic_type_context_menu },
     { .text = "Set Save Type", .submenu = &set_save_type_context_menu },
@@ -612,6 +634,7 @@ static component_context_menu_t options_context_menu = { .list = {
 #ifdef FEATURE_AUTOLOAD_ROM_ENABLED
     { .text = "Set ROM to autoload", .action = set_autoload_type },
 #endif
+    { .text = "RetroAchievements (USB)", .submenu = &set_achievements_options_menu },
     { .text = "Use Cheats", .submenu = &set_cheat_options_menu },
     { .text = "Datel Code Editor", .action = open_datel_code_editor },
 #ifdef FEATURE_PATCHER_GUI_ENABLED
@@ -674,6 +697,12 @@ static int get_rom_patch_override_current_selection (menu_t *menu) {
         (void *) (menu->load.rom_info.settings.patches_enabled ? true : false));
 }
 #endif
+
+static int get_rom_achievements_current_selection (menu_t *menu) {
+    return find_menu_item_index_by_arg(
+        &set_achievements_options_menu,
+        (void *) (menu->load.rom_info.settings.achievements_enabled ? true : false));
+}
 
 static int get_rom_clear_rdram_current_selection (menu_t *menu) {
     return find_menu_item_index_by_arg(
@@ -776,6 +805,7 @@ static void draw (menu_t *menu, surface_t *d) {
             "Rumble PAK:\t\t%s\n"
             "Transfer PAK:\t\t%s\n"
             "\n"
+            "Achievements:\t\t%s\n"
             "Datel Cheats:\t\t%s\n"
             "Patches:\t\t\t%s\n"
             "Clear RDRAM:\t\t%s\n"
@@ -786,7 +816,8 @@ static void draw (menu_t *menu, surface_t *d) {
             format_rom_expansion_pak_info(menu->load.rom_info.features.expansion_pak),
             format_rom_pak_feature_info(menu->load.rom_info.features.rumble_pak),
             format_rom_pak_feature_info(menu->load.rom_info.features.transfer_pak),
-            format_boolean_type(menu->load.rom_info.settings.cheats_enabled),
+            format_boolean_type(menu->load.rom_info.settings.achievements_enabled),
+            format_boolean_type(menu->load.rom_info.settings.cheats_enabled && !menu->load.rom_info.settings.achievements_enabled),
             format_boolean_type(menu->load.rom_info.settings.patches_enabled),
             format_boolean_type(menu->load.rom_info.settings.clear_rdram_enabled)
         );
@@ -971,6 +1002,12 @@ static void load (menu_t *menu) {
     }
 
     menu->boot_params->clear_rdram = menu->load.rom_info.settings.clear_rdram_enabled;
+
+    // RetroAchievements: the agent goes in the Expansion Pak; the bridge on the
+    // PC reads the ROM back from the SC64 (rom_size bytes) to hash it
+    menu->boot_params->retroachievements = menu->load.rom_info.settings.achievements_enabled && is_memory_expanded();
+    int64_t rom_size = file_get_size(path_get(menu->load.rom_path));
+    menu->boot_params->rom_size = rom_size > 0 ? (uint32_t) rom_size : 0;
 }
 
 /**

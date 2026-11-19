@@ -83,13 +83,15 @@ static inline uint32_t cheats_calc_x106_xor(uint8_t seed, uint8_t offset) {
 }
 
 /**
- * @brief Patch the IPL3 with the cheat engine.
- * 
+ * @brief Point the end of the IPL3 (its final "jr t1") at our code.
+ *
+ * Shared by the cheat engine and n64ra.
+ *
  * @param cic_type The CIC type.
  * @param target The target address.
- * @return true if successful, false otherwise.
+ * @return true if the IPL3 could NOT be patched, false once patched.
  */
-static bool cheats_patch_ipl3 (cic_type_t cic_type, io32_t *target) {
+bool cheats_patch_ipl3 (cic_type_t cic_type, io32_t *target) {
     uint32_t patch_offset = 0;
     uint32_t j_instruction = I_J((uint32_t)(target));
 
@@ -116,7 +118,7 @@ static bool cheats_patch_ipl3 (cic_type_t cic_type, io32_t *target) {
     }
 
     if (test_instruction != I_JR(REG_T1)) {
-        return false;
+        return true; // not a retail libultra IPL3: leave it alone
     }
 
     switch (cic_type) {

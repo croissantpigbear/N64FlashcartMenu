@@ -34,7 +34,7 @@
 #define MENU_ROM_LOAD_HISTORY_FILE  "history.ini"
 
 #define MENU_CACHE_DIRECTORY        "cache"
-#define BACKGROUND_CACHE_FILE       "background.data"
+#define BACKGROUND_CACHE_FILE       "background-n64ra.data" /* n64ra: not the stock menu's, so the theme background shows until one is set here */
 
 #define FPS_LIMIT                   (30.0f)
 

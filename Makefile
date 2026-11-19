@@ -28,6 +28,7 @@ SRCS = \
 	main.c \
 	boot/boot.c \
 	boot/cheats.c \
+	boot/n64ra.c \
 	boot/cic.c \
 	boot/reboot.S \
 	flashcart/64drive/64drive_ll.c \
@@ -116,6 +117,17 @@ SOUNDS_WAV = \
 
 SOUNDS_XM ?=
 
+# n64ra colour theme: trophynight (default) or goldrush
+THEME ?= trophynight
+IMAGES += theme_$(THEME).png
+ifeq ($(THEME),goldrush)
+N64_CFLAGS += -DTHEME_GOLDRUSH
+endif
+# switching themes rebuilds everything that depends on the palette
+ifeq ($(wildcard $(BUILD_DIR)/theme.$(THEME)),)
+$(shell rm -rf $(BUILD_DIR) $(FILESYSTEM_DIR)/menu/sprites; mkdir -p $(BUILD_DIR); touch $(BUILD_DIR)/theme.$(THEME))
+endif
+
 OBJS = $(addprefix $(BUILD_DIR)/, $(addsuffix .o,$(basename $(SRCS))))
 MINIZ_OBJS = $(filter $(BUILD_DIR)/libs/miniz/%.o,$(OBJS))
 SPNG_OBJS = $(filter $(BUILD_DIR)/libs/libspng/%.o,$(OBJS))
@@ -131,6 +143,7 @@ $(MINIZ_OBJS): N64_CFLAGS+=-Wno-unused-function -fcompare-debug-second
 $(SPNG_OBJS): N64_CFLAGS+=-DSPNG_USE_MINIZ -fcompare-debug-second
 $(FILESYSTEM_DIR)/menu/fonts/Firple-Bold.font64: MKFONT_FLAGS+=--compress 1 --outline 1 --size 15 --charset $(ASSETS_DIR)/fonts/charset.txt --ellipsis 2026,1
 $(FILESYSTEM_DIR)/menu/sounds/%.wav64: AUDIOCONV_FLAGS=--wav-compress 1
+$(FILESYSTEM_DIR)/menu/sprites/theme_%.sprite: MKSPRITE_FLAGS=--format RGBA16 --compress 1
 
 $(@info $(shell mkdir -p ./$(FILESYSTEM_DIR) &> /dev/null))
 
